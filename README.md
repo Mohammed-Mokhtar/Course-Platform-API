@@ -25,6 +25,7 @@ The API supports authentication, course creation, session management, quiz quest
 - Enrollment tracking with completed sessions
 - Admin statistics endpoint
 - File uploads for profile pictures, thumbnails, videos, and PDFs
+- Joi request validation for key write operations
 
 ## Project Structure
 
@@ -47,6 +48,11 @@ src/
     sessions/
     users/
 ```
+
+The codebase follows a `controller` + `service` structure in most modules:
+
+- controllers define routes and middleware
+- services contain the business logic
 
 ## Getting Started
 
@@ -327,6 +333,7 @@ Notes:
 
 - `cardNumber` is required only when the course has a price.
 - Free courses can be subscribed to without a card number.
+- If provided, `cardNumber` must be exactly 16 characters.
 
 #### `GET /api/v1/courses/:courseId/sessions`
 
@@ -393,7 +400,11 @@ Body:
 
 Notes:
 
-- There is no Joi validation on this route.
+- Joi validation is applied.
+- At least one field is required.
+- `title` must be 3 to 120 chars if sent.
+- `contentType` must be `video` or `pdf` if sent.
+- `duration` must be 1 to 50 chars if sent.
 - `passingScoreThreshold` and file upload are not updated here.
 
 #### `DELETE /api/v1/sessions/:id`
@@ -488,6 +499,8 @@ Body:
 Notes:
 
 - Student only.
+- Joi validation is applied.
+- `answers` is required and must be a non-empty array of positive integers.
 - Answer values are compared using 1-based numbering.
 - The student must be enrolled in the course.
 - The same session cannot be submitted twice after completion.
@@ -516,8 +529,12 @@ Body:
 Notes:
 
 - All fields are optional.
+- Joi validation is applied.
+- At least one field is required.
+- `text` must be 2 to 100 chars if sent.
+- `options` must contain 2 to 5 items if sent.
+- `correctAnswerIndex` must be from `1` to `5` if sent.
 - If `correctAnswerIndex` is sent, the code subtracts `1` before storing it.
-- There is no Joi validation on this route.
 
 #### `DELETE /api/v1/questions/:id`
 

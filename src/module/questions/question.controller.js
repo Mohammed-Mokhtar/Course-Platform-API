@@ -1,59 +1,13 @@
 import { Router } from "express";
 import { auth, checkRole } from "../../common/middleware/auth.js";
 import { validate } from "../../common/utils/validation.js";
-import { Session } from "../../database/model/session.model.js";
-import { Question } from "../../database/model/question.model.js";
+import { updateQuestionSchema } from "./question.validate.js";
+import { deleteQuestion, updateQuestion } from "./question.service.js";
 
 const router = Router();
 
-router.put("/:id", auth, checkRole("teacher"), async (req, res) => {
-  let { id } = req.params;
-  let { text, options, correctAnswerIndex } = req.body;
-  if (correctAnswerIndex) correctAnswerIndex -= 1;
-  const question = await Question.findById(id).populate({
-    path: "sessionId",
-    populate: {
-      path: "courseId",
-    },
-  });
-  if (
-    !question ||
-    !req.user._id.equals(question.sessionId.courseId.teacherId)
-  ) {
-    return res.json({
-      message: "this question is not found or you don't own this session",
-    });
-  }
-  text ? (question.text = text) : null;
-  options ? (question.options = options) : null;
-  correctAnswerIndex
-    ? (question.correctAnswerIndex = correctAnswerIndex)
-    : null;
-  await question.save();
+router.put("/:id", auth, checkRole("teacher"), validate(updateQuestionSchema), updateQuestion);
 
-  return res.json({ message: "question updated", question });
-});
-
-router.delete("/:id", auth, checkRole("teacher"), async (req, res) => {
-  let { id } = req.params;
-
-  const question = await Question.findById(id).populate({
-    path: "sessionId",
-    populate: {
-      path: "courseId",
-    },
-  });
-  if (
-    !question ||
-    !req.user._id.equals(question.sessionId.courseId.teacherId)
-  ) {
-    return res.json({
-      message: "this question is not found or you don't own this session",
-    });
-  }
-  const deletedQuestion = await Question.findByIdAndDelete(id);
-
-  return res.json({ message: "question deleted", deletedQuestion });
-});
+router.delete("/:id", auth, checkRole("teacher"), deleteQuestion);
 
 export default router;

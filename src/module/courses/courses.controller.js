@@ -4,6 +4,7 @@ import { validate } from "../../common/utils/validation.js";
 import {
   addSessionSchema,
   createCourseSchema,
+  subscribeToCourseSchema,
   updateCourseSchema,
 } from "./courses.validate.js";
 import {
@@ -66,9 +67,8 @@ router.post(
   "/:id/subscribe",
   auth,
   checkRole("student"),
-
+  validate(subscribeToCourseSchema),
   subscribeToCourse,
 );
 
 export default router;
-

@@ -25,3 +25,6 @@ export const addSessionSchema = joi.object({
   passingScoreThreshold: joi.number().min(0).max(100).required(),
 });
 
+export const subscribeToCourseSchema = joi.object({
+  cardNumber: joi.string().trim().length(16).optional(),
+});
