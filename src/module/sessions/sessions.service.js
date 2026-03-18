@@ -139,30 +139,22 @@ export const streamVideo = async (req, res) => {
   const fileSize = stat.size;
   const range = req.headers.range;
 
-  if (range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    const chunkSize = end - start + 1;
+  if (!range) return res.json({ message: "you have to include range" });
 
-    const head = {
-      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-      "Accept-Ranges": "bytes",
-      "Content-Length": chunkSize,
-      "Content-Type": "video/mp4",
-    };
-    res.status(206);
-    Object.entries(head).forEach(([key, value]) => res.setHeader(key, value));
-    fs.createReadStream(filePath, { start, end }).pipe(res);
-    return;
-  }
+  const parts = range.replace(/bytes=/, "").split("-");
+  const start = parseInt(parts[0]);
+  const end = parts[1] ? parseInt(parts[1]) : fileSize - 1;
+  const chunkSize = end - start + 1;
 
   const head = {
-    "Content-Length": fileSize,
+    "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+    "Accept-Ranges": "bytes",
+    "Content-Length": chunkSize,
     "Content-Type": "video/mp4",
   };
-  Object.entries(head).forEach(([key, value]) => res.setHeader(key, value));
-  res.set(head);
+  res.status(206, head);
+  fs.createReadStream(filePath, { start, end }).pipe(res);
+
   fs.createReadStream(filePath).pipe(res);
 };
 
@@ -244,6 +236,7 @@ export const submitSessionQuiz = async (req, res) => {
     courseId: questions[0].sessionId.courseId,
     studentId: req.user._id,
   });
+
   if (!isEnrolled) {
     return res.json({ message: "you don't  enrolled in this course" });
   }
