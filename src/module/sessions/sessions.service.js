@@ -29,8 +29,7 @@ const getSessionEnrollment = async (session, studentId) => {
 const ensureSessionAccess = async (session, studentId, res) => {
   const isEnrolled = await getSessionEnrollment(session, studentId);
   if (!isEnrolled) {
-    res.json({ message: "you don't  enrolled in this course" });
-    return null;
+    return res.json({ message: "you don't  enrolled in this course" });
   }
 
   if (session.order > 1) {
@@ -43,10 +42,10 @@ const ensureSessionAccess = async (session, studentId, res) => {
       previousSession &&
       !isEnrolled.completedSessions.includes(previousSession._id)
     ) {
-      res.status(403).json({
-        message: "You must complete the previous session before accessing this one",
+      return res.json({
+        message:
+          "You must complete the previous session before accessing this one",
       });
-      return null;
     }
   }
 
@@ -121,7 +120,11 @@ export const streamVideo = async (req, res) => {
   const session = await Session.findById(id);
 
   if (!session || !session.filePath) {
-    return res.status(404).json({ message: "Video not found" });
+    return res.json({ message: "Video not found" });
+  }
+
+  if (session.contentType !== "video") {
+    return res.json({ message: "this session is not a video" });
   }
 
   const hasAccess = await ensureSessionAccess(session, req.user._id, res);
@@ -129,7 +132,7 @@ export const streamVideo = async (req, res) => {
 
   const filePath = resolveLocalFilePath(session.filePath);
   if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ message: "File does not exist on server" });
+    return res.json({ message: "File does not exist on server" });
   }
 
   const stat = fs.statSync(filePath);
@@ -148,7 +151,8 @@ export const streamVideo = async (req, res) => {
       "Content-Length": chunkSize,
       "Content-Type": "video/mp4",
     };
-    res.writeHead(206, head);
+    res.status(206);
+    Object.entries(head).forEach(([key, value]) => res.setHeader(key, value));
     fs.createReadStream(filePath, { start, end }).pipe(res);
     return;
   }
@@ -157,7 +161,8 @@ export const streamVideo = async (req, res) => {
     "Content-Length": fileSize,
     "Content-Type": "video/mp4",
   };
-  res.writeHead(200, head);
+  Object.entries(head).forEach(([key, value]) => res.setHeader(key, value));
+  res.set(head);
   fs.createReadStream(filePath).pipe(res);
 };
 
@@ -166,19 +171,19 @@ export const getSessionPdf = async (req, res) => {
   const session = await Session.findById(id);
 
   if (!session || !session.filePath) {
-    return res.status(404).json({ message: "PDF not found" });
+    return res.json({ message: "PDF not found" });
   }
 
   const hasAccess = await ensureSessionAccess(session, req.user._id, res);
   if (!hasAccess) return;
 
   if (session.contentType !== "pdf") {
-    return res.status(400).json({ message: "this session is not a pdf" });
+    return res.json({ message: "this session is not a pdf" });
   }
 
   const filePath = resolveLocalFilePath(session.filePath);
   if (!filePath || !fs.existsSync(filePath)) {
-    return res.status(404).json({ message: "File does not exist on server" });
+    return res.json({ message: "File does not exist on server" });
   }
 
   res.setHeader("Content-Type", "application/pdf");
@@ -257,8 +262,9 @@ export const submitSessionQuiz = async (req, res) => {
       previousSession &&
       !isEnrolled.completedSessions.includes(previousSession._id)
     ) {
-      return res.status(403).json({
-        message: "You must complete the previous session before accessing this one",
+      return res.json({
+        message:
+          "You must complete the previous session before accessing this one",
       });
     }
   }

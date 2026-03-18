@@ -21,7 +21,13 @@ const router = Router();
 
 router.get("/:id", getSessionById);
 
-router.put("/:id", auth, checkRole("teacher"), validate(updateSessionSchema), updateSession);
+router.put(
+  "/:id",
+  auth,
+  checkRole("teacher"),
+  validate(updateSessionSchema),
+  updateSession,
+);
 
 router.delete("/:id", auth, checkRole("teacher"), deleteSession);
 
